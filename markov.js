@@ -1,8 +1,6 @@
 var globalRegex = /\b(\w|['])+([\.,-\/#!$%\^&\*;:{}=\-_`~])*/;
 
 function Markov(text) {
-  // "nodes" is the array of nodes and probabilities
-  //this.nodes = {};
   this.textSource = text;
   this.tokenRegex = globalRegex;
   
@@ -13,9 +11,6 @@ function Markov(text) {
   
   this.generateNodes(this.nodes, this.textSource, this.tokenRegex);
   this.calculateProbabilities();
-  // functions
-  
-  // need a way to check if a token is an end-token or not
   
   function generateNodes(nodes, text, rgx) {
     var subText = text;
@@ -70,8 +65,8 @@ function Markov(text) {
     var sentence = "";
     nextNode = startNode;
     while (nextNode != null && !nextNode.isEndToken) {
-      sentence += nextNode.token + " ";
       nextNode = nextNode.getFollowingNode();
+      sentence += nextNode.token + " ";
       //console.log(nextNode.token);
     }
     
@@ -86,9 +81,6 @@ function MarkovNode(token) {
   this.followingNodeObjects = {};
   this.tokenRegex = globalRegex;
   this.isEndToken = isEndToken(token);
-  // if (this.isEndToken) {
-  //   console.log(this.token);
-  // }
   
   this.followedBy = followedBy;
   this.caluclateProbabilities = calculateProbabilities;
@@ -126,11 +118,9 @@ function MarkovNode(token) {
   function getFollowingNode() {
     var probabilityMap = {};
     var currentProbability = 0;
-    //console.log(this.followingNodeObjects);
     for (var token in this.followingNodeObjects) {
       var nodeObject = this.followingNodeObjects[token];
       var probability = nodeObject.probability;
-      //console.log(nodeObject.probability);
       if (probability != null) {
         currentProbability += probability;
         probabilityMap[currentProbability] = nodeObject.node;
