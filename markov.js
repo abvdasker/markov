@@ -1,4 +1,4 @@
-var globalRegex = /\b(\w|['])+([\.,-\/#!$%\^&\*;:{}=\-_`~])*/;
+var globalRegex = /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/;
 
 function Markov(text) {
   this.textSource = text;
@@ -57,14 +57,14 @@ function Markov(text) {
     var startNodeToken = tokens[Math.round(Math.random()*tokens.length)];
     var startNode = this.nodes[startNodeToken];
     
-    while (startNode.isEndToken) {
+    while (startNode.isEndToken()) {
       startNodeToken = tokens[Math.round(Math.random()*tokens.length)];
       startNode = this.nodes[startNodeToken];
     }
     
     var sentence = "";
     nextNode = startNode;
-    while (nextNode != null && !nextNode.isEndToken) {
+    while (nextNode != null && !nextNode.isEndToken()) {
       nextNode = nextNode.getFollowingNode();
       sentence += nextNode.token + " ";
       //console.log(nextNode.token);
@@ -80,7 +80,8 @@ function MarkovNode(token) {
   this.count = 1;
   this.followingNodeObjects = {};
   this.tokenRegex = globalRegex;
-  this.isEndToken = isEndToken(token);
+  this.notEndings = ['Mr.', 'Mrs.', 'Miss.'];
+  this.isEndToken = isEndToken;
   
   this.followedBy = followedBy;
   this.caluclateProbabilities = calculateProbabilities;
@@ -110,8 +111,13 @@ function MarkovNode(token) {
     }
   }
   
-  function isEndToken(token) {
+  function isEndToken() {
+    var token = this.token
     var lastChar = token.charAt(token.length - 1);
+    if (this.notEndings.indexOf(token) != -1) {
+      return false;
+    }
+    
     return lastChar.match(/[\.]/) != null;
   }
   
