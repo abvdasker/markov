@@ -33,6 +33,7 @@ nodeArray.sort(function(nodea, nodeb) {
 });
 
 console.log(markov.generateSentence());
+//console.log(markov.nodes['all'].followingNodeObjects);
 
 // for (var node in nodeArray) {
 //   console.log("word: "+nodeArray[node].token+" count: " + nodeArray[node].count)

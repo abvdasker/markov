@@ -1,8 +1,10 @@
+var globalRegex = /\b(\w|['])+([\.,-\/#!$%\^&\*;:{}=\-_`~])*/;
+
 function Markov(text) {
   // "nodes" is the array of nodes and probabilities
   //this.nodes = {};
   this.textSource = text;
-  this.tokenRegex = /\b\w+([']|[\.,-\/#!$%\^&\*;:{}=\-_`~\?])*\b/;
+  this.tokenRegex = globalRegex;
   
   this.nodes = {};
   this.generateNodes = generateNodes;
@@ -55,21 +57,22 @@ function Markov(text) {
   }
   
   function generateSentence() {
-    var nodeArray = [];
-    for (var token in this.nodes) {
-      nodeArray.push(this.nodes[token]);
-    }
     
-    var startNode = nodeArray[100];
-    console.log(startNode.getFollowingNode());
+    var tokens = Object.keys(this.nodes);
+    var startNodeToken = tokens[Math.round(Math.random()*tokens.length)];
+    var startNode = this.nodes[startNodeToken];
+    
     while (startNode.isEndToken) {
-      startNode = nodeArray[Math.round(Math.random()*nodeArray.length)]
+      startNodeToken = tokens[Math.round(Math.random()*tokens.length)];
+      startNode = this.nodes[startNodeToken];
     }
     
     var sentence = "";
     nextNode = startNode;
     while (nextNode != null && !nextNode.isEndToken) {
       sentence += nextNode.token + " ";
+      nextNode = nextNode.getFollowingNode();
+      //console.log(nextNode.token);
     }
     
     return sentence;
@@ -81,8 +84,11 @@ function MarkovNode(token) {
   this.token = token;
   this.count = 1;
   this.followingNodeObjects = {};
-  this.tokenRegex = /\b\w+([']|[\.,-\/#!$%\^&\*;:{}=\-_`~])*\b/;
+  this.tokenRegex = globalRegex;
   this.isEndToken = isEndToken(token);
+  // if (this.isEndToken) {
+  //   console.log(this.token);
+  // }
   
   this.followedBy = followedBy;
   this.caluclateProbabilities = calculateProbabilities;
@@ -114,7 +120,7 @@ function MarkovNode(token) {
   
   function isEndToken(token) {
     var lastChar = token.charAt(token.length - 1);
-    return lastChar.match(/[.!;:\?]/) != null;
+    return lastChar.match(/[\.]/) != null;
   }
   
   function getFollowingNode() {
@@ -124,7 +130,7 @@ function MarkovNode(token) {
     for (var token in this.followingNodeObjects) {
       var nodeObject = this.followingNodeObjects[token];
       var probability = nodeObject.probability;
-      console.log(nodeObject.probability);
+      //console.log(nodeObject.probability);
       if (probability != null) {
         currentProbability += probability;
         probabilityMap[currentProbability] = nodeObject.node;
