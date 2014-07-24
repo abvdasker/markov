@@ -1,5 +1,6 @@
 var globalRegex = /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/;
 
+// generalize this to accept arbitrary gram length. Right now it is only monograms.
 function Markov(text) {
   this.textSource = text;
   this.tokenRegex = globalRegex;
