@@ -2,24 +2,29 @@ var globalRegex = /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/;
 
 // generalize this to accept arbitrary gram length. Right now it is only monograms.
 function Markov(text) {
+  // variables
   this.textSource = text;
   this.tokenRegex = globalRegex;
-  
   this.nodes = {};
+  this.startNodes = {};
+  
+  // functions
   this.generateNodes = generateNodes;
   this.calculateProbabilities = calculateProbabilities;
   this.generateSentence = generateSentence;
   
-  this.generateNodes(this.nodes, this.textSource, this.tokenRegex);
+  // initializers
+  this.generateNodes(this.nodes, this.startNodes, this.textSource, this.tokenRegex);
   this.calculateProbabilities();
   
-  function generateNodes(nodes, text, rgx) {
+  function generateNodes(nodes, startNodes, text, rgx) {
     var subText = text;
-    var match = subText.match(rgx);
+    var match   = subText.match(rgx);
     
+    var lastLastToken = null;
     var lastToken = null;
-    var currentToken = match[0];
-    
+    var currentToken = null;
+  
     while (match != null) {
       lastToken = currentToken;
       currentToken = match[0];
@@ -33,14 +38,22 @@ function Markov(text) {
         if (currentNode == null) {
           currentNode = new MarkovNode(currentToken);
           nodes[currentToken] = currentNode;
+          
+          if (lastNode.isEndToken()) {
+            currentNode.isStartNode = true;
+            startNodes[currentToken] = currentNode;
+          }
+          
         }
         
         lastNode.followedBy(currentNode);
       }
       
       // for next loop
-      subText = subText.substr(currentToken.length + 1);
+      var offset = subText.indexOf(currentToken);
+      subText = subText.substr(offset + currentToken.length + 1);
       match = subText.match(rgx);
+      
     }
     
   }
@@ -54,16 +67,12 @@ function Markov(text) {
   
   function generateSentence() {
     
-    var tokens = Object.keys(this.nodes);
-    var startNodeToken = tokens[Math.round(Math.random()*tokens.length)];
-    var startNode = this.nodes[startNodeToken];
+    var startTokens = Object.keys(this.startNodes);
+    var randIdx = Math.round(Math.random()*startTokens.length)
+    var startNodeToken = startTokens[randIdx];
+    var startNode = this.startNodes[startNodeToken];
     
-    while (startNode.isEndToken()) {
-      startNodeToken = tokens[Math.round(Math.random()*tokens.length)];
-      startNode = this.nodes[startNodeToken];
-    }
-    
-    var sentence = "";
+    var sentence = startNode.token + " ";
     nextNode = startNode;
     while (nextNode != null && !nextNode.isEndToken()) {
       nextNode = nextNode.getFollowingNode();
@@ -77,16 +86,19 @@ function Markov(text) {
 }
 
 function MarkovNode(token) {
+  // variables
   this.token = token;
   this.count = 1;
   this.followingNodeObjects = {};
   this.tokenRegex = globalRegex;
   this.notEndings = ['Mr.', 'Mrs.', 'Miss.'];
-  this.isEndToken = isEndToken;
+  this.isStartNode = false;
   
+  // functions
   this.followedBy = followedBy;
   this.caluclateProbabilities = calculateProbabilities;
   this.getFollowingNode = getFollowingNode;
+  this.isEndToken = isEndToken;
   
   function calculateProbabilities() {
     var totalCount = 0;
