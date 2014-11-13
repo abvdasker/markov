@@ -1,4 +1,5 @@
 var globalRegex = /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/;
+var endPunctuationRegex = /[\.]|[!]|[?]/;
 
 // generalize this to accept arbitrary gram length. Right now it is only monograms.
 function Markov(text) {
@@ -7,11 +8,15 @@ function Markov(text) {
   this.tokenRegex = globalRegex;
   this.nodes = {};
   this.startNodes = {};
+  this.triGrams = {};
   
   // functions
   this.generateNodes = generateNodes;
   this.calculateProbabilities = calculateProbabilities;
-  this.generateSentence = generateSentence;
+  this.generateSentenceNodes = generateSentenceNodes;
+  this.generateSentenceTriGrams = generateSentenceTriGrams;
+  this.makeCurrentNode = makeCurrentNode;
+  this.makeCurrentTriGram = makeCurrentTriGram;
   
   // initializers
   this.generateNodes(this.nodes, this.startNodes, this.textSource, this.tokenRegex);
@@ -24,27 +29,30 @@ function Markov(text) {
     var lastLastToken = null;
     var lastToken = null;
     var currentToken = null;
+    var currentTriGram = null;
   
+    var last3Nodes = [];
     while (match != null) {
       lastToken = currentToken;
       currentToken = match[0];
       
       if (lastToken != null) {
+        
         var lastNode = nodes[lastToken];
         if (lastNode == null) {
           lastNode = new MarkovNode(lastToken);
         }
-        var currentNode = nodes[currentToken];
-        if (currentNode == null) {
-          currentNode = new MarkovNode(currentToken);
-          nodes[currentToken] = currentNode;
-          
-          if (lastNode.isEndToken()) {
-            currentNode.isStartNode = true;
-            startNodes[currentToken] = currentNode;
-          }
-          
+        
+        var currentNode = this.makeCurrentNode(currentToken, lastNode);
+        
+        if (last3Nodes.length > 2) {
+          last3Nodes.shift();
+          last3Nodes.push(currentNode);
+        } else {
+          last3Nodes.push(currentNode);
         }
+        var currentTriGram = this.makeCurrentTriGram(last3Nodes);
+        this.triGrams[currentTriGram.firstNode.token] = currentTriGram;
         
         lastNode.followedBy(currentNode);
       }
@@ -58,6 +66,37 @@ function Markov(text) {
     
   }
   
+  function makeCurrentTriGram(last3Nodes) {
+    var triGramNodes = [];
+    for (var idx in last3Nodes) {
+      var node = last3Nodes[idx];
+      triGramNodes.push(node);
+      if (node.isEndToken()) {
+        break;
+      }
+    }
+    
+    var triGram = new TriGram(triGramNodes);
+    return triGram;
+  }
+  
+  function makeCurrentNode(currentToken, lastNode) {
+
+    var currentNode = this.nodes[currentToken];
+    if (currentNode == null) {
+      currentNode = new MarkovNode(currentToken);
+      this.nodes[currentToken] = currentNode;
+      
+      if (lastNode.isEndToken()) {
+        currentNode.isStartNode = true;
+        this.startNodes[currentToken] = currentNode;
+      }
+      
+    }
+    
+    return currentNode;
+  }
+  
   function calculateProbabilities() {
     for (var token in this.nodes) {
       var node = this.nodes[token];
@@ -65,12 +104,28 @@ function Markov(text) {
     }
   }
   
-  function generateSentence() {
+  function generateSentenceTriGrams() {
+    var startNode = getRandomStartNode(this.startNodes);
+    var triGram = this.triGrams[startNode.token];
+    var sentence = "";
+    var seenTriGrams = [];
+    while (!triGram.lastNode.isEndToken()) {
+      //console.log(triGram.getWordString());
+      //console.log(triGram.getWordString());
+      sentence += triGram.getWordString();
+      var bridgeNode = triGram.lastNode;
+      var nextTriGramCandidate;
+      triGram = this.triGrams[bridgeNode.getFollowingNode().token];
+      seenTriGrams.push(triGram);
+    }
+    sentence += triGram.getWordString();
     
-    var startTokens = Object.keys(this.startNodes);
-    var randIdx = Math.round(Math.random()*startTokens.length)
-    var startNodeToken = startTokens[randIdx];
-    var startNode = this.startNodes[startNodeToken];
+    return sentence;
+  }
+  
+  function generateSentenceNodes() {
+    
+    var startNode = getRandomStartNode(this.startNodes);
     
     var sentence = startNode.token + " ";
     nextNode = startNode;
@@ -82,7 +137,39 @@ function Markov(text) {
     
     return sentence;
   }
+  
+  function getRandomStartNode(startNodes) {
+    var startTokens = Object.keys(startNodes);
+    var randIdx = Math.round(Math.random()*startTokens.length)
+    var startNodeToken = startTokens[randIdx];
+    var startNode = startNodes[startNodeToken];
+    
+    return startNode;
+  }
 
+}
+
+function TriGram(nodes) {
+  this.nodes = nodes;
+  this.firstNode = nodes[0];
+  this.lastNode = nodes[nodes.length - 1];
+  this.nodeCount = nodes.length;
+  
+  // functions
+  this.has3Nodes = has3Nodes;
+  this.getWordString = getWordString;
+  
+  function has3Nodes() {
+    return this.nodes.length == 3;
+  }
+  
+  function getWordString() {
+    var string = "";
+    for (var idx in this.nodes) {
+      string += this.nodes[idx].token + " ";
+    }
+    return string;
+  }
 }
 
 function MarkovNode(token) {
@@ -131,7 +218,7 @@ function MarkovNode(token) {
       return false;
     }
     
-    return lastChar.match(/[\.]/) != null;
+    return lastChar.match(endPunctuationRegex) != null;
   }
   
   function getFollowingNode() {

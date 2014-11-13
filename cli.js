@@ -20,5 +20,5 @@ var options = {
 var text = fs.readFileSync(file_name, options);
 //console.log("read file synchronously");
 var markov = new Markov(text);
-console.log(markov.generateSentence());
+console.log(markov.generateSentenceTriGrams());
 //console.log(markov.nodes['all'].followingNodeObjects);
