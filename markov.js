@@ -32,8 +32,10 @@ function Markov(text) {
     var currentTriGram = null;
   
     var last3Nodes = [];
+    var tokens = 0;
     while (match != null) {
       lastToken = currentToken;
+      tokens++;
       currentToken = match[0];
       
       if (lastToken != null) {
@@ -52,7 +54,17 @@ function Markov(text) {
           last3Nodes.push(currentNode);
         }
         var currentTriGram = this.makeCurrentTriGram(last3Nodes);
-        this.triGrams[currentTriGram.firstNode.token] = currentTriGram;
+        
+        /* trigrams are getting clobbered by their starting token.
+         * Need to find a different means of uniquely identifying them.
+         * i.e. An ending token could start multiple trigrams.
+         */
+        var triGramToken = currentTriGram.firstNode.token;
+        if (this.triGrams[triGramToken] == null) {
+          this.triGrams[triGramToken] = [currentTriGram];
+        } else {
+          this.triGrams[triGramToken].push(currentTriGram);
+        }
         
         lastNode.followedBy(currentNode);
       }
@@ -63,6 +75,7 @@ function Markov(text) {
       match = subText.match(rgx);
       
     }
+    //console.log(tokens);
     
   }
   
@@ -75,7 +88,6 @@ function Markov(text) {
         break;
       }
     }
-    
     var triGram = new TriGram(triGramNodes);
     return triGram;
   }
@@ -105,8 +117,17 @@ function Markov(text) {
   }
   
   function generateSentenceTriGrams() {
+    // var wordCount = 0;
+    // for (var key in this.triGrams) {
+    //   var triGramArray = this.triGrams[key];
+    //   for (var idx in triGramArray) {
+    //     var triGram = triGramArray[idx];
+    //     wordCount += triGram.nodes.length;
+    //   }
+    // }
     var startNode = getRandomStartNode(this.startNodes);
-    var triGram = this.triGrams[startNode.token];
+    var triGramArray = this.triGrams[startNode.token];
+    var triGram = getRandomObjectFromArray(triGramArray);
     var sentence = "";
     var seenTriGrams = [];
     while (!triGram.lastNode.isEndToken()) {
@@ -115,12 +136,18 @@ function Markov(text) {
       sentence += triGram.getWordString();
       var bridgeNode = triGram.lastNode;
       var nextTriGramCandidate;
-      triGram = this.triGrams[bridgeNode.getFollowingNode().token];
+      var triGramArray = this.triGrams[bridgeNode.getFollowingNode().token];
+      triGram = getRandomObjectFromArray(triGramArray);
       seenTriGrams.push(triGram);
     }
+    
     sentence += triGram.getWordString();
     
     return sentence;
+  }
+  
+  function getRandomTriGrams(triGrams) {
+    
   }
   
   function generateSentenceNodes() {
@@ -140,11 +167,17 @@ function Markov(text) {
   
   function getRandomStartNode(startNodes) {
     var startTokens = Object.keys(startNodes);
-    var randIdx = Math.round(Math.random()*startTokens.length)
+    var randIdx = Math.floor(Math.random()*(startTokens.length - 1));
     var startNodeToken = startTokens[randIdx];
     var startNode = startNodes[startNodeToken];
     
     return startNode;
+  }
+  
+  function getRandomObjectFromArray(array) {
+    var arrayLength = array.length;
+    var randIdx = Math.round(Math.random()*(array.length - 1));
+    return array[randIdx];
   }
 
 }
