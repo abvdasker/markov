@@ -4,6 +4,7 @@ var Markov = require('./markov.js').Markov;
 var args = process.argv;
 
 var file_name = args[2];
+var ngrams = args[3] || 3;
 
 if (!fs.existsSync(file_name)) {
   console.error("File " + file_name + " not found. Aborting.");
@@ -19,6 +20,6 @@ var options = {
 
 var text = fs.readFileSync(file_name, options);
 //console.log("read file synchronously");
-var markov = new Markov(text);
-console.log(markov.generateSentenceTriGrams());
+var markov = new Markov(text, ngrams);
+console.log(markov.generateSentenceNGrams());
 //console.log(markov.nodes['all'].followingNodeObjects);

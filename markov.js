@@ -1,44 +1,50 @@
 var MarkovNode = require("./MarkovNode.js");
-var TriGram = require("./TriGram.js");
+//var TriGram = require("./TriGram.js");
+var NGram = require("./NGram.js");
 
 var globalRegex = /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/;
 var endPunctuationRegex = /[\.]|[!]|[?]/;
 
 // generalize this to accept arbitrary gram length. Right now it is only monograms.
-function Markov(text) {
+function Markov(text, ngrams) {
   // variables
   this.textSource = text;
   this.tokenRegex = globalRegex;
   this.nodes = {};
   this.startNodes = {};
-  this.triGrams = {};
+  this.nGrams = {};
+  this.ngrams = ngrams;
   
   // functions
   this.generateNodes = generateNodes;
   this.calculateProbabilities = calculateProbabilities;
   this.generateSentenceNodes = generateSentenceNodes;
-  this.generateSentenceTriGrams = generateSentenceTriGrams;
+  this.generateSentenceNGrams = generateSentenceNGrams;
   this.makeCurrentNode = makeCurrentNode;
-  this.makeCurrentTriGram = makeCurrentTriGram;
+  this.makeCurrentNGram = makeCurrentNGram;
   
   // initializers
-  this.generateNodes(this.nodes, this.startNodes, this.textSource, this.tokenRegex);
+  this.generateNodes(
+    this.nodes,
+    this.startNodes,
+    this.textSource,
+    this.tokenRegex,
+    this.ngrams);
+    
   this.calculateProbabilities();
   
-  function generateNodes(nodes, startNodes, text, rgx) {
+  function generateNodes(nodes, startNodes, text, rgx, ngrams) {
     var subText = text;
     var match   = subText.match(rgx);
     
     var lastLastToken = null;
     var lastToken = null;
     var currentToken = null;
-    var currentTriGram = null;
+    var currentNGram = null;
   
-    var last3Nodes = [];
-    var tokens = 0;
+    var lastNNodes = [];
     while (match != null) {
       lastToken = currentToken;
-      tokens++;
       currentToken = match[0];
       
       if (lastToken != null) {
@@ -48,25 +54,25 @@ function Markov(text) {
           lastNode = new MarkovNode(lastToken);
         }
         
-        var currentNode = this.makeCurrentNode(currentToken, lastNode);
+        var currentNode = this.makeCurrentNode(currentToken, lastNode, ngrams);
         
-        if (last3Nodes.length > 2) {
-          last3Nodes.shift();
-          last3Nodes.push(currentNode);
+        if (lastNNodes.length > ngrams - 1) {
+          lastNNodes.shift();
+          lastNNodes.push(currentNode);
         } else {
-          last3Nodes.push(currentNode);
+          lastNNodes.push(currentNode);
         }
-        var currentTriGram = this.makeCurrentTriGram(last3Nodes);
+        var currentNGram = this.makeCurrentNGram(lastNNodes, ngrams);
         
         /* trigrams are getting clobbered by their starting token.
          * Need to find a different means of uniquely identifying them.
          * i.e. An ending token could start multiple trigrams.
          */
-        var triGramToken = currentTriGram.firstNode.token;
-        if (this.triGrams[triGramToken] == null) {
-          this.triGrams[triGramToken] = [currentTriGram];
+        var nGramToken = currentNGram.firstNode.token;
+        if (this.nGrams[nGramToken] == null) {
+          this.nGrams[nGramToken] = [currentNGram];
         } else {
-          this.triGrams[triGramToken].push(currentTriGram);
+          this.nGrams[nGramToken].push(currentNGram);
         }
         
         lastNode.followedBy(currentNode);
@@ -76,23 +82,21 @@ function Markov(text) {
       var offset = subText.indexOf(currentToken);
       subText = subText.substr(offset + currentToken.length + 1);
       match = subText.match(rgx);
-      
     }
     //console.log(tokens);
-    
   }
   
-  function makeCurrentTriGram(last3Nodes) {
-    var triGramNodes = [];
-    for (var idx in last3Nodes) {
-      var node = last3Nodes[idx];
-      triGramNodes.push(node);
+  function makeCurrentNGram(lastNNodes, ngrams) {
+    var nGramNodes = [];
+    for (var idx in lastNNodes) {
+      var node = lastNNodes[idx];
+      nGramNodes.push(node);
       if (node.isEndToken()) {
         break;
       }
     }
-    var triGram = new TriGram(triGramNodes);
-    return triGram;
+    var nGram = new NGram(ngrams, nGramNodes);
+    return nGram;
   }
   
   function makeCurrentNode(currentToken, lastNode) {
@@ -119,32 +123,21 @@ function Markov(text) {
     }
   }
   
-  function generateSentenceTriGrams() {
-    // var wordCount = 0;
-    // for (var key in this.triGrams) {
-    //   var triGramArray = this.triGrams[key];
-    //   for (var idx in triGramArray) {
-    //     var triGram = triGramArray[idx];
-    //     wordCount += triGram.nodes.length;
-    //   }
-    // }
+  function generateSentenceNGrams() {
     var startNode = getRandomStartNode(this.startNodes);
-    var triGramArray = this.triGrams[startNode.token];
-    var triGram = getRandomObjectFromArray(triGramArray);
+    var nGramArray = this.nGrams[startNode.token];
+    var nGram = getRandomObjectFromArray(nGramArray);
     var sentence = "";
-    var seenTriGrams = [];
-    while (!triGram.lastNode.isEndToken()) {
-      //console.log(triGram.getWordString());
-      //console.log(triGram.getWordString());
-      sentence += triGram.getWordString();
-      var bridgeNode = triGram.lastNode;
-      var nextTriGramCandidate;
-      var triGramArray = this.triGrams[bridgeNode.getFollowingNode().token];
-      triGram = getRandomObjectFromArray(triGramArray);
-      seenTriGrams.push(triGram);
+    var seenNGrams = [];
+    while (!nGram.lastNode.isEndToken()) {
+      sentence += "/ " + nGram.getWordString();
+      var bridgeNode = nGram.lastNode;
+      var nGramArray = this.nGrams[bridgeNode.getFollowingNode().token];
+      nGram = getRandomObjectFromArray(nGramArray);
+      seenNGrams.push(nGram);
     }
     
-    sentence += triGram.getWordString();
+    sentence += "/ " + nGram.getWordString();
     
     return sentence;
   }
