@@ -1,6 +1,6 @@
-var MarkovNode = require("./MarkovNode.js");
+var MarkovNode = require("./markov_node.js");
 //var TriGram = require("./TriGram.js");
-var NGram = require("./NGram.js");
+var NGram = require("./n_gram.js");
 
 var globalRegex = /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/;
 var endPunctuationRegex = /[\.]|[!]|[?]/;
@@ -130,14 +130,16 @@ function Markov(text, ngrams) {
     var sentence = "";
     var seenNGrams = [];
     while (!nGram.lastNode.isEndToken()) {
-      sentence += "/ " + nGram.getWordString();
+      //sentence += "/ " + nGram.getWordString();
+      sentence += nGram.getWordString();
       var bridgeNode = nGram.lastNode;
       var nGramArray = this.nGrams[bridgeNode.getFollowingNode().token];
       nGram = getRandomObjectFromArray(nGramArray);
       seenNGrams.push(nGram);
     }
     
-    sentence += "/ " + nGram.getWordString();
+    //sentence += "/ " + nGram.getWordString();
+    sentence += nGram.getWordString();
     
     return sentence;
   }
