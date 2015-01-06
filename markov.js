@@ -6,7 +6,7 @@ var globalRegex = /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/;
 var endPunctuationRegex = /[\.]|[!]|[?]/;
 
 // generalize this to accept arbitrary gram length. Right now it is only monograms.
-function Markov(text, ngrams) {
+function Markov(text, ngrams, sentenceCount) {
   // variables
   this.textSource = text;
   this.tokenRegex = globalRegex;
@@ -14,12 +14,14 @@ function Markov(text, ngrams) {
   this.startNodes = {};
   this.nGrams = {};
   this.ngrams = ngrams;
+  this.sentenceCount = sentenceCount;
   
   // functions
   this.generateNodes = generateNodes;
   this.calculateProbabilities = calculateProbabilities;
   this.generateSentenceNodes = generateSentenceNodes;
   this.generateSentenceNGrams = generateSentenceNGrams;
+  this.generateSentences = generateSentences;
   this.makeCurrentNode = makeCurrentNode;
   this.makeCurrentNGram = makeCurrentNGram;
   
@@ -123,6 +125,15 @@ function Markov(text, ngrams) {
     }
   }
   
+  function generateSentences() {
+    var multiSentence = "";
+    for (var i = 0; i < this.sentenceCount - 1; i++) {
+      multiSentence += this.generateSentenceNGrams();
+    }
+    multiSentence += this.generateSentenceNGrams();
+    return multiSentence;
+  }
+  
   function generateSentenceNGrams() {
     var startNode = getRandomStartNode(this.startNodes);
     var nGramArray = this.nGrams[startNode.token];
@@ -145,7 +156,7 @@ function Markov(text, ngrams) {
   }
   
   function generateSentenceNodes() {
-    
+
     var startNode = getRandomStartNode(this.startNodes);
     
     var sentence = startNode.token + " ";
