@@ -16,15 +16,6 @@ function Markov(text, ngrams, sentenceCount) {
   this.ngrams = ngrams;
   this.sentenceCount = sentenceCount;
   
-  // functions
-  this.generateNodes = generateNodes;
-  this.calculateProbabilities = calculateProbabilities;
-  this.generateSentenceNodes = generateSentenceNodes;
-  this.generateSentenceNGrams = generateSentenceNGrams;
-  this.generateSentences = generateSentences;
-  this.makeCurrentNode = makeCurrentNode;
-  this.makeCurrentNGram = makeCurrentNGram;
-  
   // initializers
   this.generateNodes(
     this.nodes,
@@ -34,8 +25,10 @@ function Markov(text, ngrams, sentenceCount) {
     this.ngrams);
     
   this.calculateProbabilities();
-  
-  function generateNodes(nodes, startNodes, text, rgx, ngrams) {
+
+}
+Markov.prototype = {
+  generateNodes: function(nodes, startNodes, text, rgx, ngrams) {
     var subText = text;
     var match   = subText.match(rgx);
     
@@ -86,9 +79,9 @@ function Markov(text, ngrams, sentenceCount) {
       match = subText.match(rgx);
     }
     //console.log(tokens);
-  }
+  },
   
-  function makeCurrentNGram(lastNNodes, ngrams) {
+  makeCurrentNGram: function(lastNNodes, ngrams) {
     var nGramNodes = [];
     for (var idx in lastNNodes) {
       var node = lastNNodes[idx];
@@ -99,9 +92,9 @@ function Markov(text, ngrams, sentenceCount) {
     }
     var nGram = new NGram(ngrams, nGramNodes);
     return nGram;
-  }
+  },
   
-  function makeCurrentNode(currentToken, lastNode) {
+  makeCurrentNode: function(currentToken, lastNode) {
 
     var currentNode = this.nodes[currentToken];
     if (currentNode == null) {
@@ -116,28 +109,27 @@ function Markov(text, ngrams, sentenceCount) {
     }
     
     return currentNode;
-  }
-  
-  function calculateProbabilities() {
+  },
+  calculateProbabilities: function() {
     for (var token in this.nodes) {
       var node = this.nodes[token];
       node.calculateProbabilities();
     }
-  }
+  },
   
-  function generateSentences() {
+  generateSentences: function() {
     var multiSentence = "";
     for (var i = 0; i < this.sentenceCount - 1; i++) {
       multiSentence += this.generateSentenceNGrams();
     }
     multiSentence += this.generateSentenceNGrams();
     return multiSentence;
-  }
+  },
   
-  function generateSentenceNGrams() {
-    var startNode = getRandomStartNode(this.startNodes);
+  generateSentenceNGrams: function() {
+    var startNode = this.getRandomStartNode(this.startNodes);
     var nGramArray = this.nGrams[startNode.token];
-    var nGram = getRandomObjectFromArray(nGramArray);
+    var nGram = this.getRandomObjectFromArray(nGramArray);
     var sentence = "";
     var seenNGrams = [];
     while (!nGram.lastNode.isEndToken()) {
@@ -145,7 +137,7 @@ function Markov(text, ngrams, sentenceCount) {
       sentence += nGram.getWordString();
       var bridgeNode = nGram.lastNode;
       var nGramArray = this.nGrams[bridgeNode.getFollowingNode().token];
-      nGram = getRandomObjectFromArray(nGramArray);
+      nGram = this.getRandomObjectFromArray(nGramArray);
       seenNGrams.push(nGram);
     }
     
@@ -153,9 +145,9 @@ function Markov(text, ngrams, sentenceCount) {
     sentence += nGram.getWordString();
     
     return sentence;
-  }
+  },
   
-  function generateSentenceNodes() {
+  generateSentenceNodes: function() {
 
     var startNode = getRandomStartNode(this.startNodes);
     
@@ -168,23 +160,22 @@ function Markov(text, ngrams, sentenceCount) {
     }
     
     return sentence;
-  }
+  },
   
-  function getRandomStartNode(startNodes) {
+  getRandomStartNode: function(startNodes) {
     var startTokens = Object.keys(startNodes);
     var randIdx = Math.floor(Math.random()*(startTokens.length - 1));
     var startNodeToken = startTokens[randIdx];
     var startNode = startNodes[startNodeToken];
     
     return startNode;
-  }
-  
-  function getRandomObjectFromArray(array) {
+  },
+  getRandomObjectFromArray: function(array) {
     var arrayLength = array.length;
     var randIdx = Math.round(Math.random()*(array.length - 1));
     return array[randIdx];
   }
-
+  
 }
 
 function TextSource(name, text) {
