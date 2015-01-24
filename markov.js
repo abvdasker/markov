@@ -121,7 +121,7 @@ function Markov(text, ngrams, sentenceCount) {
   function calculateProbabilities() {
     for (var token in this.nodes) {
       var node = this.nodes[token];
-      node.caluclateProbabilities();
+      node.calculateProbabilities();
     }
   }
   

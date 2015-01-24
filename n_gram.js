@@ -4,23 +4,18 @@ function NGram(n, nodes) {
   this.firstNode = nodes[0];
   this.lastNode = nodes[nodes.length - 1];
   this.nodeCount = nodes.length;
-  
-  // functions
-  this.hasNNodes = hasNNodes;
-  this.getWordString = getWordString;
-  
-  function hasNNodes() {
+}
+NGram.prototype = {
+  hasNodes: function() {
     return this.nodes.length == this.n;
-  }
-  
-  function getWordString() {
+  },
+  getWordString: function() {
     var string = "";
     for (var idx in this.nodes) {
       string += this.nodes[idx].token + " ";
     }
     return string;
   }
-  
 }
 
 module.exports = NGram;

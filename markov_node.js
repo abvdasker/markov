@@ -7,14 +7,9 @@ function MarkovNode(token) {
   this.followingNodeObjects = {};
   this.notEndings = ['Mr.', 'Mrs.', 'Miss.'];
   this.isStartNode = false;
-  
-  // functions
-  this.followedBy = followedBy;
-  this.caluclateProbabilities = calculateProbabilities;
-  this.getFollowingNode = getFollowingNode;
-  this.isEndToken = isEndToken;
-  
-  function calculateProbabilities() {
+}
+MarkovNode.prototype = {
+  calculateProbabilities: function() {
     var totalCount = 0;
     for (var token in this.followingNodeObjects) {
       totalCount += this.followingNodeObjects[token].count;
@@ -24,9 +19,8 @@ function MarkovNode(token) {
       var nodeObject = this.followingNodeObjects[token];
       this.followingNodeObjects[token].probability = nodeObject.count/totalCount;
     }
-  }
-  
-  function followedBy(node) {
+  },
+  followedBy: function(node) {
     if (this.followingNodeObjects[node.token] != null) {
       var followingNode = this.followingNodeObjects[node.token];
       this.followingNodeObjects[node.token].count++;
@@ -36,9 +30,8 @@ function MarkovNode(token) {
         node: node
       }
     }
-  }
-  
-  function isEndToken() {
+  },
+  isEndToken: function() {
     var token = this.token
     var lastChar = token.charAt(token.length - 1);
     if (this.notEndings.indexOf(token) != -1) {
@@ -46,9 +39,8 @@ function MarkovNode(token) {
     }
     
     return lastChar.match(endPunctuationRegex) != null;
-  }
-  
-  function getFollowingNode() {
+  },
+  getFollowingNode: function() {
     var probabilityMap = {};
     var currentProbability = 0;
     for (var token in this.followingNodeObjects) {
@@ -67,6 +59,7 @@ function MarkovNode(token) {
       }
     }
   }
+  
   
 }
 
