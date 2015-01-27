@@ -10,6 +10,7 @@ function Markov(text, ngrams, sentenceCount) {
   this.nGrams = {};
   this.ngrams = ngrams;
   this.sentenceCount = sentenceCount;
+  this.followingChain = null;
   
   // initializers
   this.generateNodes(
@@ -110,6 +111,7 @@ Markov.prototype = {
     
     return currentNode;
   },
+  
   calculateProbabilities: function() {
     for (var token in this.nodes) {
       var node = this.nodes[token];
@@ -128,17 +130,20 @@ Markov.prototype = {
   
   generateSentenceNGrams: function() {
     var startNode = this.getRandomStartNode(this.startNodes);
+    return this.generateSentenceNGramsWithStartNode(startNode);
+  },
+  
+  generateSentenceNGramsWithStartNode: function(startNode) {
     var nGramArray = this.nGrams[startNode.token];
     var nGram = this.getRandomObjectFromArray(nGramArray);
     var sentence = "";
-    var seenNGrams = [];
+    var bridgeNode;
     while (!nGram.lastNode.isEndToken()) {
       //sentence += "/ " + nGram.getWordString();
       sentence += nGram.getWordString();
-      var bridgeNode = nGram.lastNode;
+      bridgeNode = nGram.lastNode;
       var nGramArray = this.nGrams[bridgeNode.getFollowingNode().token];
       nGram = this.getRandomObjectFromArray(nGramArray);
-      seenNGrams.push(nGram);
     }
     
     //sentence += "/ " + nGram.getWordString();
@@ -174,6 +179,64 @@ Markov.prototype = {
     var arrayLength = array.length;
     var randIdx = Math.round(Math.random()*(array.length - 1));
     return array[randIdx];
+  },
+  
+  chain: function(markov) {
+    if (this === markov) { // DO NOT chain with self
+      return false;
+    }
+    this.followingChain = markov;
+    return true;
+  },
+  
+  generateChainedSentences: function() {
+    var n = 8; // minimum number of nodes for a text
+    var startNode = this.getRandomStartNode(this.startNodes);
+    return this.generateChainedSentence("", n, startNode);
+  },
+  
+  generateChainedSentence: function(sentence, n, startNode) {
+    sentence += " / ";
+    // first, append n grams to the sentence
+    var finalSentence;
+    if (this.followingChain != null) {
+
+      var extendedSentenceAndEndNode = this.appendNGrams(sentence, n, startNode);
+      var extendedSentence = extendedSentenceAndEndNode[0];
+      var endNode = extendedSentenceAndEndNode[1];
+      var newStartNode = endNode.getFollowingNode();
+      
+      while (!this.followingChain.containsNode(newStartNode)) {
+        extendedSentenceAndEndNode = this.appendNGrams(extendedSentence, 1, newStartNode);
+        extendedSentence = extendedSentenceAndEndNode[0];
+        endNode = extendedSentenceAndEndNode[1];
+        newStartNode = endNode.getFollowingNode();
+      }
+      console.log(finalSentence);
+      finalSentence = this.followingChain.generateChainedSentence(extendedSentence, n, newStartNode);
+    } else {
+      finalSentence = sentence + this.generateSentenceNGramsWithStartNode(startNode);
+    }
+    return finalSentence;
+  },
+
+  appendNGrams: function(sentence, n, startNode) {
+    var nGramArray = this.nGrams[startNode.token];
+    var nGram = this.getRandomObjectFromArray(nGramArray);
+    var bridgeNode;
+    for(var i = 0; i < n; i++) {
+      sentence += nGram.getWordString();
+      bridgeNode = nGram.lastNode;
+      var nGramArray = this.nGrams[bridgeNode.getFollowingNode().token];
+      nGram = this.getRandomObjectFromArray(nGramArray);
+    }
+    //debugger;
+    //console.log(bridgeNode);
+    return [sentence, bridgeNode];
+  },
+
+  containsNode: function(node) {
+    return this.nGrams[node.token] != null;
   }
   
 }
