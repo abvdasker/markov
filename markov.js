@@ -2,14 +2,10 @@ var MarkovNode = require("./markov_node.js");
 //var TriGram = require("./TriGram.js");
 var NGram = require("./n_gram.js");
 
-var globalRegex = /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/;
-var endPunctuationRegex = /[\.]|[!]|[?]/;
-
 // generalize this to accept arbitrary gram length. Right now it is only monograms.
 function Markov(text, ngrams, sentenceCount) {
   // variables
   this.textSource = text;
-  this.tokenRegex = globalRegex;
   this.nodes = {};
   this.startNodes = {};
   this.nGrams = {};
@@ -28,6 +24,10 @@ function Markov(text, ngrams, sentenceCount) {
 
 }
 Markov.prototype = {
+  
+  tokenRegex: /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/,
+  endPunctuationRegex: /[\.]|[!]|[?]/,
+  
   generateNodes: function(nodes, startNodes, text, rgx, ngrams) {
     var subText = text;
     var match   = subText.match(rgx);
