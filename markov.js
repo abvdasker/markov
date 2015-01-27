@@ -5,7 +5,6 @@ var NGram = require("./n_gram.js");
 // generalize this to accept arbitrary gram length. Right now it is only monograms.
 function Markov(text, ngrams, sentenceCount) {
   // variables
-  this.textSource = text;
   this.nodes = {};
   this.startNodes = {};
   this.nGrams = {};
@@ -16,13 +15,14 @@ function Markov(text, ngrams, sentenceCount) {
   this.generateNodes(
     this.nodes,
     this.startNodes,
-    this.textSource,
+    text,
     this.tokenRegex,
     this.ngrams);
     
   this.calculateProbabilities();
 
 }
+
 Markov.prototype = {
   
   tokenRegex: /(\w|['-])+([\.,\/#!$%\^&\*;:{}=\-_`~])*/,
@@ -176,11 +176,6 @@ Markov.prototype = {
     return array[randIdx];
   }
   
-}
-
-function TextSource(name, text) {
-  this.text = text; 
-  this.name = name;
 }
 
 module.exports = {
